@@ -1,3 +1,5 @@
+import { syncEvent } from './notion-sync.js'
+
 const API_PATH = '/api/calendar-events'
 const PAGE_SIZE = 1000
 const CORS_HEADERS = {
@@ -126,6 +128,9 @@ async function createEvent(request, config) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url)
+    if (['/api/notion/webhook', '/api/notion/backfill'].includes(url.pathname)) {
+      return handleNotion(request, env, url)
+    }
     if (url.pathname !== API_PATH) return json({ error: '找不到 API。' }, 404)
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_HEADERS })
     if (!['GET', 'POST'].includes(request.method)) {
@@ -137,4 +142,52 @@ export default {
     if (request.method === 'GET') return readEvents(config)
     return createEvent(request, config)
   },
+}
+
+async function handleNotion(request, env, url) {
+  if (request.method !== 'POST') return json({ error: '請使用 POST。' }, 405)
+  if (!env.NOTION_SYNC_SECRET || !env.NOTION_TOKEN || !env.NOTION_DATA_SOURCE_ID) {
+    return json({ error: '尚未設定 NOTION_SYNC_SECRET、NOTION_TOKEN 或 NOTION_DATA_SOURCE_ID。' }, 503)
+  }
+  if (request.headers.get('Authorization') !== `Bearer ${env.NOTION_SYNC_SECRET}`) {
+    return json({ error: '同步驗證失敗。' }, 401)
+  }
+  const config = getSupabaseConfig(env)
+  if (config.error) return config.error
+  let body
+  try { body = await request.json() } catch { return json({ error: '請提供 JSON。' }, 400) }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return json({ error: '無效資料。' }, 400)
+  try {
+    const query = new URL(config.url)
+    query.searchParams.set('select', 'id,title,starts_at,ends_at,all_day,location,description')
+    const webhook = url.pathname.endsWith('/webhook')
+    if (webhook) {
+      if (body.schema !== 'public' || body.table !== 'calendar_events' || !['INSERT', 'UPDATE'].includes(body.type) || !body.record?.id) {
+        return json({ error: '只接受 public.calendar_events 的 INSERT / UPDATE 通知。' }, 400)
+      }
+      // Re-read current data rather than applying possibly stale webhook contents.
+      query.searchParams.set('id', `eq.${body.record.id}`)
+    } else {
+      if (body.after !== undefined && (typeof body.after !== 'string' || !/^[a-zA-Z0-9-]{1,64}$/.test(body.after))) {
+        return json({ error: '無效的分頁游標。' }, 400)
+      }
+      query.searchParams.set('order', 'id.asc')
+      query.searchParams.set('limit', '5')
+      if (body.after) query.searchParams.set('id', `gt.${body.after}`)
+    }
+    const result = await callSupabase(query, config.key)
+    if (result.error) return result.error
+    const events = await result.response.json()
+    if (!Array.isArray(events)) throw new Error('Supabase 行程格式錯誤。')
+    let synced = 0
+    for (const event of events) {
+      try { await syncEvent(env, event) } catch (error) {
+        return json({ error: error.message, synced, failedId: event.id, retryAfter: 5 }, 502)
+      }
+      synced++
+    }
+    return json({ synced, next: !webhook && events.length === 5 ? String(events.at(-1).id) : null })
+  } catch {
+    return json({ error: '同步失敗，請檢查來源資料、連線與 Notion 設定後重試。' }, 502)
+  }
 }

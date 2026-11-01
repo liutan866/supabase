@@ -1,5 +1,60 @@
 const CALENDAR_API_URL = 'https://restless-cherry-3164.dennis866.workers.dev/api/calendar-events'
 const $ = id => document.getElementById(id)
+let calendarEvents = []
+let calendarMonth = new Date()
+calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1)
+
+function renderCalendar() {
+  $('calendar-month').textContent = calendarMonth.toLocaleDateString('zh-Hant', { year: 'numeric', month: 'long' })
+  const grid = $('calendar-grid')
+  grid.replaceChildren()
+  for (const name of ['日', '一', '二', '三', '四', '五', '六']) {
+    const heading = document.createElement('div')
+    heading.className = 'weekday'
+    heading.textContent = name
+    grid.append(heading)
+  }
+  const first = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1 - calendarMonth.getDay())
+  const today = new Date()
+  const days = Math.ceil((calendarMonth.getDay() + new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0).getDate()) / 7) * 7
+  for (let index = 0; index < days; index++) {
+    const date = new Date(first.getFullYear(), first.getMonth(), first.getDate() + index)
+    const next = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1)
+    const cell = document.createElement('div')
+    cell.className = `calendar-day${date.getMonth() !== calendarMonth.getMonth() ? ' outside' : ''}${date.toDateString() === today.toDateString() ? ' today' : ''}`
+    const number = document.createElement('span')
+    number.className = 'day-number'
+    number.textContent = String(date.getDate())
+    cell.append(number)
+    calendarEvents.forEach((event, eventIndex) => {
+      const start = new Date(event.starts_at)
+      const end = new Date(event.ends_at)
+      if (start >= next || end <= date || !Number.isFinite(+start) || !Number.isFinite(+end)) return
+      const entry = document.createElement('button')
+      entry.type = 'button'
+      entry.className = 'calendar-event'
+      const time = event.all_day ? '全天' : start < date ? '續' : start.toLocaleTimeString('zh-Hant', { hour: '2-digit', minute: '2-digit', hour12: false })
+      entry.textContent = `${time} ${event.title}`
+      entry.title = `${event.title}${event.location ? `｜${event.location}` : ''}`
+      entry.addEventListener('click', () => {
+        const item = $('events-list').children[eventIndex]
+        item.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        item.focus({ preventScroll: true })
+      })
+      cell.append(entry)
+    })
+    grid.append(cell)
+  }
+}
+
+for (const [id, offset] of [['previous-month', -1], ['next-month', 1], ['today-month', 0]]) {
+  $(id).addEventListener('click', () => {
+    const base = offset === 0 ? new Date() : calendarMonth
+    calendarMonth = new Date(base.getFullYear(), base.getMonth() + offset, 1)
+    renderCalendar()
+  })
+}
+renderCalendar()
 
 function message(text, error = false) {
   $('status').textContent = text
@@ -51,6 +106,7 @@ async function loadEvents() {
       throw new Error(data?.details ? `${reason}：${data.details}` : reason)
     }
     if (!Array.isArray(data?.events)) throw new Error('行程 API 回傳格式錯誤。')
+    calendarEvents = [...data.events].sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))
 
     const list = $('events-list')
     list.replaceChildren()
@@ -60,9 +116,10 @@ async function loadEvents() {
       empty.textContent = '目前沒有行程。'
       list.append(empty)
     } else {
-      for (const event of data.events) {
+      for (const event of calendarEvents) {
         const item = document.createElement('li')
         item.className = 'event-item'
+        item.tabIndex = -1
         const title = document.createElement('h3')
         title.textContent = event.title
         const time = document.createElement('p')
@@ -93,6 +150,7 @@ async function loadEvents() {
         list.append(item)
       }
     }
+    renderCalendar()
     $('events-status').textContent = `共 ${data.events.length} 筆行程`
   } catch (error) {
     $('events-status').textContent = `讀取行程失敗：${error.message}`

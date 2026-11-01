@@ -20,7 +20,7 @@ function setup(fetch) {
       replaceChildren(...children) { this.children = children },
       reset() { this.wasReset = true },
     })
-  for (const id of ['status', 'timezone', 'all-day', 'start', 'end', 'event-form', 'title', 'event-fields', 'location', 'description', 'refresh-events', 'events-status', 'events-list']) {
+  for (const id of ['calendar-month', 'calendar-grid', 'previous-month', 'next-month', 'today-month', 'status', 'timezone', 'all-day', 'start', 'end', 'event-form', 'title', 'event-fields', 'location', 'description', 'refresh-events', 'events-status', 'events-list']) {
     elements.set(id, createElement(id))
   }
   const documentListeners = {}
@@ -154,4 +154,26 @@ test('shows an explicit error when the read API fails', async () => {
   assert.match(ui.get('events-status').textContent, /Supabase unavailable/)
   assert.equal(ui.get('events-status').error, true)
   assert.equal(ui.get('refresh-events').disabled, false)
+})
+
+test('month calendar shows spanning events with an exclusive end and supports navigation', async () => {
+  const now = new Date()
+  const start = new Date(now.getFullYear(), now.getMonth(), 10)
+  const end = new Date(now.getFullYear(), now.getMonth(), 12)
+  const ui = setup(async () => Response.json({ events: [{
+    title: '跨日活動', starts_at: start.toISOString(), ends_at: end.toISOString(), all_day: true,
+  }] }))
+  await ui.load()
+  const cells = ui.get('calendar-grid').children.slice(7)
+  const entries = cells.flatMap(cell => cell.children.slice(1))
+  assert.equal(entries.length, 2)
+  assert.equal(entries[0].textContent, '全天 跨日活動')
+  const label = ui.get('calendar-month').textContent
+  ui.get('next-month').listeners.click()
+  assert.notEqual(ui.get('calendar-month').textContent, label)
+  ui.get('previous-month').listeners.click()
+  assert.equal(ui.get('calendar-month').textContent, label)
+  ui.get('next-month').listeners.click()
+  ui.get('today-month').listeners.click()
+  assert.equal(ui.get('calendar-month').textContent, label)
 })
