@@ -81,6 +81,14 @@ async function readEvents(config) {
     events.push(...page)
     if (page.length < PAGE_SIZE) break
   }
+  const now = Date.now()
+  const timestamp = event => {
+    const time = Date.parse(event.starts_at)
+    return Number.isFinite(time) ? time : Infinity
+  }
+  // Sort after collecting every page so proximity is global, not per page.
+  events.sort((a, b) => Math.abs(timestamp(a) - now) - Math.abs(timestamp(b) - now)
+    || timestamp(a) - timestamp(b))
   return json({ events })
 }
 

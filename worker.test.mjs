@@ -4,6 +4,26 @@ import worker from './worker.js'
 
 const env = { SUPABASE_URL: 'https://project.supabase.co', SUPABASE_SECRET_KEY: 'test-secret' }
 
+test('GET sorts all pages by start time proximity to now, with invalid dates last', async t => {
+  const now = Date.parse('2026-11-01T12:00:00Z')
+  t.mock.method(Date, 'now', () => now)
+  let page = 0
+  t.mock.method(globalThis, 'fetch', async () => Response.json(page++ === 0
+    ? [
+        { title: 'far future', starts_at: '2026-12-01T12:00:00Z' },
+        { title: 'far past', starts_at: '2026-10-01T12:00:00Z' },
+        ...Array.from({ length: 998 }, () => ({ title: 'invalid' })),
+      ]
+    : [
+        { title: 'near future', starts_at: '2026-11-01T13:00:00Z' },
+        { title: 'near past', starts_at: '2026-11-01T11:30:00Z' },
+      ]))
+  const response = await worker.fetch(new Request('https://worker.example/api/calendar-events'), env)
+  const { events } = await response.json()
+  assert.deepEqual(events.slice(0, 4).map(event => event.title), ['near past', 'near future', 'far future', 'far past'])
+  assert.equal(events.at(-1).title, 'invalid')
+})
+
 test('GET reads all calendar rows in ordered pages', async t => {
   const originalFetch = globalThis.fetch
   t.after(() => { globalThis.fetch = originalFetch })

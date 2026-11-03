@@ -106,7 +106,7 @@ async function loadEvents() {
       throw new Error(data?.details ? `${reason}：${data.details}` : reason)
     }
     if (!Array.isArray(data?.events)) throw new Error('行程 API 回傳格式錯誤。')
-    calendarEvents = [...data.events].sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))
+    calendarEvents = [...data.events]
 
     const list = $('events-list')
     list.replaceChildren()

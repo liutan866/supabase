@@ -15,3 +15,7 @@ npm start
 
 #
 
+https://dash.cloudflare.com/7a42c652c3a4f3e482fcd6de0aa3f344/workers/services/view/restless-cherry-3164/production
+
+https://supabase.com/dashboard/organizations
+
