@@ -48,6 +48,37 @@ test('GET reads all calendar rows in ordered pages', async t => {
   assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*')
 })
 
+test('teaching APIs map to their own Supabase tables', async t => {
+  const originalFetch = globalThis.fetch
+  t.after(() => { globalThis.fetch = originalFetch })
+  const calls = []
+  globalThis.fetch = async (url, options = {}) => {
+    calls.push({ method: options.method || 'GET', path: new URL(url).pathname })
+    return options.method === 'POST'
+      ? new Response(null, { status: 201 })
+      : Response.json([])
+  }
+
+  await worker.fetch(new Request('https://worker.example/api/calendar-events-2'), env)
+  await worker.fetch(new Request('https://worker.example/api/calendar-events-3'), env)
+  await worker.fetch(new Request('https://worker.example/api/calendar-events-2', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: 'Meeting',
+      starts_at: '2026-11-01T09:00:00Z',
+      ends_at: '2026-11-01T10:00:00Z',
+      all_day: false,
+    }),
+  }), env)
+
+  assert.deepEqual(calls.map(call => call.path), [
+    '/rest/v1/calendar_events_2',
+    '/rest/v1/calendar_events_3',
+    '/rest/v1/calendar_events_2',
+  ])
+})
+
 test('POST preserves the existing create API and does not return the secret', async t => {
   const originalFetch = globalThis.fetch
   t.after(() => { globalThis.fetch = originalFetch })

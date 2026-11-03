@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>教學功能 B · 所有行程</title>
+<style>
+:root{font-family:system-ui,sans-serif;color:#193c35;background:#f1f5f1}*{box-sizing:border-box}body{margin:0}main{max-width:720px;margin:60px auto;padding:24px}header{margin-bottom:32px}.eyebrow{color:#347866;font-size:13px;letter-spacing:3px}h1{font-size:36px;margin:12px 0}p{line-height:1.7;color:#5b7068}.grid{display:grid;grid-template-columns:1fr;gap:24px}.card{background:white;border:1px solid #dbe5dd;border-radius:20px;padding:28px;box-shadow:0 8px 30px #193c3505}h2{margin-top:0;font-size:20px}label{display:block;font-size:14px;margin:18px 0 7px}input,textarea,button{font:inherit}input:not([type=checkbox]),textarea{width:100%;padding:12px;border:1px solid #c6d6cd;border-radius:9px;background:#fcfdfb}textarea{resize:vertical}button{border:0;border-radius:9px;padding:12px 18px;background:#20634f;color:white;cursor:pointer}button.secondary{background:#edf3ef;color:#235744}button:disabled{opacity:.5;cursor:wait}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}.check{display:flex;gap:9px;align-items:center}.hint{font-size:13px}#status,#events-status{white-space:pre-wrap;padding:16px;border-radius:10px;margin-top:24px;background:#e3ede6;overflow-wrap:anywhere}#status.error,#events-status.error{background:#fff0eb;color:#9c3525}#events-list{list-style:none;padding:0;margin:20px 0 0}.event-item{padding:18px 0;border-top:1px solid #dbe5dd}.event-item h3{margin:0 0 8px;font-size:17px}.event-item p{margin:4px 0}.event-time{font-size:14px;color:#347866}.empty{color:#5b7068}fieldset{border:0;padding:0;margin:0;min-width:0}fieldset:disabled{opacity:.55}input:focus,textarea:focus,button:focus-visible{outline:2px solid #469b7f;outline-offset:3px}@media(max-width:700px){main{margin:20px auto}.grid,.row{grid-template-columns:1fr}h1{font-size:30px}}
+</style>
+<style>
+main{max-width:1100px}.calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:24px 0 16px}.calendar-toolbar h3{margin:0}.calendar-controls{display:flex;gap:8px}.calendar-scroll{overflow-x:auto}.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:630px;gap:1px;background:#dbe5dd;border:1px solid #dbe5dd;border-radius:10px;overflow:hidden}.weekday{padding:10px;text-align:center;background:#edf3ef;font-size:14px}.calendar-day{min-height:110px;padding:8px;background:#fff}.calendar-day.outside{background:#f6f8f6;color:#84948a}.day-number{display:inline-block;padding:3px 7px;margin-bottom:5px;font-size:14px}.calendar-day.today .day-number{background:#20634f;color:white;border-radius:50%}.calendar-event{display:block;width:100%;text-align:left;background:#e3ede6;color:#193c35;border-radius:5px;padding:5px;margin:3px 0;font-size:12px;overflow-wrap:anywhere}.calendar-event:hover{background:#ccdfd2}.event-item{scroll-margin-top:24px}.event-item:focus{outline:2px solid #469b7f;outline-offset:4px}#events-list{max-height:600px;overflow-y:auto}@media(max-width:700px){.card{padding:18px}.calendar-controls button{padding:9px 12px}}
+</style>
+<main>
+  <header><span class="eyebrow">MY CALENDAR · DEMO B</span><h1>留一點時間，給重要的事。</h1><p>教學功能 B（獨立 API / 獨立資料表）。</p><p class="hint">功能入口：<a href="/index.html">功能 A</a>｜<a href="/index-2.html">功能 B</a>｜<a href="/index-3.html">功能 C</a></p></header>
+  <div class="grid">
+    <section class="card"><h2>新增行程</h2>
+      <form id="event-form"><fieldset id="event-fields">
+        <label for="title">行程名稱 *</label><input id="title" maxlength="200" required placeholder="例如：專案會議">
+        <div class="row"><div><label for="start">開始時間 *</label><input id="start" type="datetime-local" required></div><div><label for="end">結束時間 *</label><input id="end" type="datetime-local" required></div></div>
+        <p id="timezone" class="hint"></p>
+        <label class="check"><input id="all-day" type="checkbox">全天行程</label>
+        <label for="location">地點</label><input id="location" maxlength="500" placeholder="會議室、地址或線上會議網址">
+        <label for="description">備註</label><textarea id="description" rows="3" placeholder="補充行程資訊…"></textarea>
+        <div class="actions"><button type="submit">＋ 新增至行事曆</button></div>
+      </fieldset></form>
+      <p class="hint">資料會透過 Cloudflare Worker 寫入 Supabase 的 calendar_events_2（API：/api/calendar-events-2）。</p>
+    </section>
+    <section class="card" aria-labelledby="events-heading">
+      <div class="actions" style="justify-content:space-between;align-items:center;margin-top:0">
+        <h2 id="events-heading">所有行程</h2>
+        <button id="refresh-events" class="secondary" type="button">重新載入</button>
+      </div>
+      <p id="events-status" role="status" aria-live="polite">正在載入行程…</p>
+      <div class="calendar-toolbar">
+        <h3 id="calendar-month" aria-live="polite"></h3>
+        <div class="calendar-controls"><button id="previous-month" class="secondary" type="button" aria-label="上一個月">‹ 上月</button><button id="today-month" class="secondary" type="button">今天</button><button id="next-month" class="secondary" type="button" aria-label="下一個月">下月 ›</button></div>
+      </div>
+      <p class="hint">點選月曆中的行程可查看下方詳細資訊。手機可左右滑動月曆。</p>
+      <div class="calendar-scroll"><div id="calendar-grid" class="calendar-grid" aria-label="行程月曆"></div></div>
+      <h3>完整行程清單</h3>
+      <ul id="events-list" aria-live="polite"></ul>
+    </section>
+  </div>
+  <div id="status" role="status" aria-live="polite">填寫行程資訊後，按下「新增至行事曆」。</div>
+</main>
+<script src="calendar-2.js"></script>
+</html>

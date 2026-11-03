@@ -50,6 +50,19 @@ test('homepage loads the shared calendar script, not a duplicate implementation'
   assert.doesNotMatch(html + source, /sb_publishable_|apikey|supabase\.co/)
 })
 
+test('teaching pages load their own scripts and endpoints', async () => {
+  const html2 = await readFile(new URL('./index-2.html', import.meta.url), 'utf8')
+  const html3 = await readFile(new URL('./index-3.html', import.meta.url), 'utf8')
+  const js2 = await readFile(new URL('./calendar-2.js', import.meta.url), 'utf8')
+  const js3 = await readFile(new URL('./calendar-3.js', import.meta.url), 'utf8')
+  assert.match(html2, /<script src="calendar-2\.js"><\/script>/)
+  assert.match(html3, /<script src="calendar-3\.js"><\/script>/)
+  assert.match(js2, /\/api\/calendar-events-2/)
+  assert.match(js3, /\/api\/calendar-events-3/)
+  assert.match(js2, /calendar_events_2/)
+  assert.match(js3, /calendar_events_3/)
+})
+
 test('submits JSON to Worker and resets only after success', async () => {
   let called = false
   const ui = setup(async (url, options) => {

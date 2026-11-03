@@ -10,7 +10,7 @@
 main{max-width:1100px}.calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:24px 0 16px}.calendar-toolbar h3{margin:0}.calendar-controls{display:flex;gap:8px}.calendar-scroll{overflow-x:auto}.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:630px;gap:1px;background:#dbe5dd;border:1px solid #dbe5dd;border-radius:10px;overflow:hidden}.weekday{padding:10px;text-align:center;background:#edf3ef;font-size:14px}.calendar-day{min-height:110px;padding:8px;background:#fff}.calendar-day.outside{background:#f6f8f6;color:#84948a}.day-number{display:inline-block;padding:3px 7px;margin-bottom:5px;font-size:14px}.calendar-day.today .day-number{background:#20634f;color:white;border-radius:50%}.calendar-event{display:block;width:100%;text-align:left;background:#e3ede6;color:#193c35;border-radius:5px;padding:5px;margin:3px 0;font-size:12px;overflow-wrap:anywhere}.calendar-event:hover{background:#ccdfd2}.event-item{scroll-margin-top:24px}.event-item:focus{outline:2px solid #469b7f;outline-offset:4px}#events-list{max-height:600px;overflow-y:auto}@media(max-width:700px){.card{padding:18px}.calendar-controls button{padding:9px 12px}}
 </style>
 <main>
-  <header><span class="eyebrow">MY CALENDAR</span><h1>留一點時間，給重要的事。</h1><p>將下一個安排加入行事曆，填寫後即可送出。</p></header>
+  <header><span class="eyebrow">MY CALENDAR · DEMO A</span><h1>留一點時間，給重要的事。</h1><p>將下一個安排加入行事曆，填寫後即可送出。</p><p class="hint">功能入口：<a href="/index.html">功能 A</a>｜<a href="/index-2.html">功能 B</a>｜<a href="/index-3.html">功能 C</a></p></header>
   <div class="grid">
     <section class="card"><h2>新增行程</h2>
       <form id="event-form"><fieldset id="event-fields">
@@ -22,7 +22,7 @@ main{max-width:1100px}.calendar-toolbar{display:flex;align-items:center;justify-
         <label for="description">備註</label><textarea id="description" rows="3" placeholder="補充行程資訊…"></textarea>
         <div class="actions"><button type="submit">＋ 新增至行事曆</button></div>
       </fieldset></form>
-      <p class="hint">資料會透過 Cloudflare Worker 寫入 Supabase 的 calendar_events。全天行程的結束日期不包含當天，例如單日行程請選隔天為結束日期。</p>
+      <p class="hint">資料會透過 Cloudflare Worker 寫入 Supabase 的 calendar_events（API：/api/calendar-events）。全天行程的結束日期不包含當天，例如單日行程請選隔天為結束日期。</p>
     </section>
     <section class="card" aria-labelledby="events-heading">
       <div class="actions" style="justify-content:space-between;align-items:center;margin-top:0">

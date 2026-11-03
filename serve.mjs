@@ -5,7 +5,11 @@ import { readFile } from 'node:fs/promises'
 const files = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/index.html', ['index.html', 'text/html; charset=utf-8']],
+  ['/index-2.html', ['index-2.html', 'text/html; charset=utf-8']],
+  ['/index-3.html', ['index-3.html', 'text/html; charset=utf-8']],
   ['/calendar.js', ['calendar.js', 'text/javascript; charset=utf-8']],
+  ['/calendar-2.js', ['calendar-2.js', 'text/javascript; charset=utf-8']],
+  ['/calendar-3.js', ['calendar-3.js', 'text/javascript; charset=utf-8']],
 ])
 http.createServer(async (req, res) => {
   const file = files.get(new URL(req.url, 'http://localhost').pathname)
